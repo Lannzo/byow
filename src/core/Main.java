@@ -1,5 +1,6 @@
 package core;
 
+import edu.princeton.cs.algs4.StdDraw;
 import tileengine.TERenderer;
 import tileengine.TETile;
 import tileengine.Tileset;
@@ -27,9 +28,78 @@ public class Main {
 
         randomWalk(world);
         smoothen(world, 3);
+        Avatar player = createAvatar(CENTERX, CENTERY);
+        updateAvatar(world, player);
 
-        // draws the world to the screen
-        ter.renderFrame(world);
+        // Update world and avatar movement
+        boolean gameOver = false;
+        while (!gameOver) {
+            String input = takeInput();
+            makeMove(input, player, world);
+            ter.renderFrame(world);
+        }
+    }
+
+    private static void makeMove(String move, Avatar player, TETile[][] world) {
+        if (validMove(move, player, world)) {
+            // Reverse the previous tile
+            world[player.x][player.y] = Tileset.FLOOR;
+
+            switch (move) {
+                case "w" -> player.y += 1;
+                case "a" -> player.x -= 1;
+                case "s" -> player.y -= 1;
+                case "d" -> player.x += 1;
+            }
+
+            updateAvatar(world, player);
+        }
+    }
+
+    private static boolean validMove(String move, Avatar player, TETile[][] world) {
+        int x;
+        int y;
+
+        switch (move) {
+            case "w":
+                x = player.x;
+                y = player.y + 1;
+                break;
+            case "a":
+                x = player.x - 1;
+                y = player.y;
+                break;
+            case "s":
+                x = player.x;
+                y = player.y - 1;
+                break;
+            case "d":
+                x = player.x + 1;
+                y = player.y;
+                break;
+            default:
+                return false;
+        }
+
+        // Outside of world
+        if (x < 0 ||  x >= world.length || y < 0 || y >= world[0].length){
+            return false;
+        }
+
+        // Attempted to move to a wall
+        if (world[x][y] == Tileset.CELL){
+            return false;
+        }
+
+        return true;
+    }
+
+    private static String takeInput() {
+        StringBuilder s = new StringBuilder();
+        if (StdDraw.hasNextKeyTyped()) {
+            s.append(StdDraw.nextKeyTyped());
+        }
+        return s.toString();
     }
 
     public static void randomWalk(TETile[][] tiles) {
@@ -92,5 +162,13 @@ public class Main {
         if (tiles[x][y - 1] == Tileset.FLOOR) { floorCount++; }
 
         return floorCount > 2;
+    }
+
+    private static Avatar createAvatar(int positionX, int positionY) {
+        return new Avatar(positionX, positionY);
+    }
+
+    private static void updateAvatar(TETile[][] world, Avatar player) {
+        world[player.x][player.y] = Tileset.AVATAR;
     }
 }
