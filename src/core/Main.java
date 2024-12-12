@@ -39,7 +39,7 @@ public class Main {
 
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                tiles[x][y] = Tileset.WALL;
+                tiles[x][y] = Tileset.CELL;
             }
         }
 
@@ -76,7 +76,7 @@ public class Main {
     public static void smoothen(TETile[][] tiles) {
         for (int y = 1; y < HEIGHT - 1; y++) {
             for (int x = 1; x < WIDTH - 1; x++) {
-                if (tiles[x][y] == Tileset.WALL && isEdgeWalls(tiles, x, y)) {
+                if (tiles[x][y] == Tileset.CELL && isEdgeWalls(tiles, x, y)) {
                     tiles[x][y] = Tileset.FLOOR;
                 }
             }
