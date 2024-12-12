@@ -14,23 +14,19 @@ public class Main {
     private static final int CENTERX =  WIDTH / 2;
     private static final int CENTERY =  HEIGHT / 2;
 
-
-
     private static final long SEED = 2873123;
     private static final Random RANDOM = new Random();
 
     public static void main(String[] args) {
         // initialize the tile rendering engine with a window of size WIDTH x HEIGHT
         TERenderer ter = new TERenderer();
-        ter.initialize(WIDTH, HEIGHT);
+        ter.initialize(WIDTH + 2, HEIGHT + 2, 1, 1);
 
         // initialize tiles
         TETile[][] world = new TETile[WIDTH][HEIGHT];
-        randomWalk(world);
 
-        for (int i = 0; i < 3; i++) {
-        smoothen(world);
-        }
+        randomWalk(world);
+        smoothen(world, 3);
 
         // draws the world to the screen
         ter.renderFrame(world);
@@ -49,7 +45,7 @@ public class Main {
 
         int currentX = CENTERX;
         int currentY = CENTERY;
-        while (tileFloored++ < TILE_COUNT * 0.5) {
+        while (tileFloored < TILE_COUNT * 0.5) {
             tiles[currentX][currentY] = Tileset.FLOOR;
 
             // Randomly move to adjacent tile
@@ -63,8 +59,20 @@ public class Main {
             // restrict currentX and currentY within bounds
             currentX = Math.max(0, Math.min(currentX, width - 1));
             currentY = Math.max(0, Math.min(currentY, height - 1));
+
+            if (tiles[currentX][currentY] == Tileset.FLOOR) {
+                continue;
+            }
+            tileFloored++;
         }
     }
+
+    public static void smoothen(TETile[][] tiles, int iterations) {
+        for (int i = 0; i < iterations; i++) {
+            smoothen(tiles);
+        }
+    }
+
     public static void smoothen(TETile[][] tiles) {
         for (int y = 1; y < HEIGHT - 1; y++) {
             for (int x = 1; x < WIDTH - 1; x++) {

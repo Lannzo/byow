@@ -11,3 +11,6 @@ the game real-time through keyboard input.
 
 The world generation algorithm from [Broguelike Dungeon Creation, Part 1](https://anderoonies.github.io/2020/03/17/brogue-generation.html)
 looks cool. No need to follow the world rules by the spec.
+
+Easier to implement [Modified Drunkard walk](https://www.reddit.com/r/roguelikedev/comments/hhzszb/using_a_modified_drunkards_walk_to_generate_cave/)
+which just has a crawler around the world forming the world
