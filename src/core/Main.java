@@ -26,8 +26,20 @@ public class Main {
         // initialize tiles
         TETile[][] world = new TETile[WIDTH][HEIGHT];
 
+        // Enter interface
+        // Take
+
+        // Methods to generate the world
         randomWalk(world);
         smoothen(world, 3);
+
+        // timer 10 seconds
+
+
+//        spawnCoins();
+        spawnMonsters();
+        placeLadders();
+
         Avatar player = createAvatar(CENTERX, CENTERY);
         updateAvatar(world, player);
 
@@ -35,9 +47,60 @@ public class Main {
         boolean gameOver = false;
         while (!gameOver) {
             String input = takeInput();
+
+            // Turn off lights
+            if (input.equals("L")) {
+                changeLights(world, player);
+            }
+
             makeMove(input, player, world);
             ter.renderFrame(world);
         }
+    }
+
+    private static void placeLadders() {
+        // Generate new world, proceed to next level
+    }
+
+    private static void spawnMonsters() {
+        // Spawn monster
+
+        // Random walk monster at time intervals
+
+        // If avatar walks into monster, dead end game
+    }
+
+    private static void spawnCoins() {
+        // Logic where to spawn coins: find corner floors, spawn coins with chance p%
+
+        // Update world to spawn coins
+    }
+
+    // Change Lights
+    private static void changeLights(TETile[][] world, Avatar player) {
+        int VISIONRADIUS = 5;
+
+        TETile[][] noLightsWorld = world;
+
+        // Dim the lights
+
+        // Get player coordinates
+
+        // Get all the tiles around player
+
+        // Update temporary world: visible tiles around ,black the rest
+
+        // Render
+
+        // Render original world
+    }
+
+    private static boolean withinVision(Avatar player, TETile[][] world, int x, int y, int radius) {
+        int playerPosX = player.x;
+        int playerPosY = player.y;
+
+        // Calculate if tile within radius
+        return (x >= playerPosX - radius && x <= playerPosX + radius) && (y > playerPosY - radius || y < playerPosY + radius);
     }
 
     private static void makeMove(String move, Avatar player, TETile[][] world) {
