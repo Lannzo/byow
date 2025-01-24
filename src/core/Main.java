@@ -32,6 +32,7 @@ public class Main {
         // Methods to generate the world
         randomWalk(world);
         smoothen(world, 3);
+        spawnCoins(world);
 
         // timer 10 seconds
 
@@ -70,10 +71,29 @@ public class Main {
         // If avatar walks into monster, dead end game
     }
 
-    private static void spawnCoins() {
-        // Logic where to spawn coins: find corner floors, spawn coins with chance p%
+    // SPAWN COINS UPDATED RANDOM CORNERS AND EVERYWHERE
+    private static void spawnCoins(TETile[][] world) {
+        Random random = new Random();
+        double cornerSpawnChance = 0.1;
+        double randomSpawnChance = 0.02; // Lower chance for random spawns
 
-        // Update world to spawn coins
+        for (int x = 1; x < WIDTH - 1; x++) {
+            for (int y = 1; y < HEIGHT - 1; y++) {
+                if (world[x][y] == Tileset.FLOOR) {
+                    int adjacentWalls = 0;
+                    if (world[x + 1][y] == Tileset.CELL) adjacentWalls++;
+                    if (world[x - 1][y] == Tileset.CELL) adjacentWalls++;
+                    if (world[x][y + 1] == Tileset.CELL) adjacentWalls++;
+                    if (world[x][y - 1] == Tileset.CELL) adjacentWalls++;
+
+                    if (adjacentWalls >= 2 && random.nextDouble() < cornerSpawnChance) {
+                        world[x][y] = Tileset.COIN;
+                    } else if (random.nextDouble() < randomSpawnChance) { // Random spawn if not a corner
+                        world[x][y] = Tileset.COIN;
+                    }
+                }
+            }
+        }
     }
 
     // Change Lights

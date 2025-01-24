@@ -56,9 +56,14 @@ public class TERenderer {
      * @param w width of the window in tiles
      * @param h height of the window in tiles.
      */
+
     public void initialize(int w, int h) {
         initialize(w, h, 0, 0);
     }
+
+
+
+
 
     /**
      * Takes in a 2d array of TETile objects and renders the 2d array to the screen, starting from
@@ -92,6 +97,7 @@ public class TERenderer {
      * Draws all world tiles without clearing the canvas or showing the tiles.
      * @param world the 2D TETile[][] array to render
      */
+
     public void drawTiles(TETile[][] world) {
         int numXTiles = world.length;
         int numYTiles = world[0].length;
