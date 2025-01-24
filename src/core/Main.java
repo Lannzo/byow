@@ -17,7 +17,6 @@ public class Main {
 
     private static final long SEED = 2873123;
     private static final Random RANDOM = new Random();
-    private static int score = 0;
 
     public static void main(String[] args) {
         // initialize the tile rendering engine with a window of size WIDTH x HEIGHT
@@ -27,25 +26,24 @@ public class Main {
         // initialize tiles
         TETile[][] world = new TETile[WIDTH][HEIGHT];
 
-
-
         // Enter interface
         // Take
+
         // Methods to generate the world
         randomWalk(world);
         smoothen(world, 3);
+        spawnCoins(world);
 
         // timer 10 seconds
 
 
-
+//        spawnCoins();
         spawnMonsters();
         placeLadders();
 
         Avatar player = createAvatar(CENTERX, CENTERY);
         updateAvatar(world, player);
-        spawnCoins(world); //COINS
-        //drawScore(world); // SCORE
+
         // Update world and avatar movement
         boolean gameOver = false;
         while (!gameOver) {
@@ -73,47 +71,30 @@ public class Main {
         // If avatar walks into monster, dead end game
     }
 
-    //SPAWN COINS
-    private static final double COIN_SPAWN_PROBABILITY = 0.1;
+    // SPAWN COINS UPDATED RANDOM CORNERS AND EVERYWHERE
     private static void spawnCoins(TETile[][] world) {
-        // Logic where to spawn coins: find corner floors, spawn coins with chance p%
-        for (int y=0; y < HEIGHT; y++) {
-            for(int x = 0; x < WIDTH; x++) {
-                //check if tile is a corner floor and spawn coin with a chance
-                if (isSpawnableCorner(world, x, y) && RANDOM.nextDouble() < COIN_SPAWN_PROBABILITY){
-                    world[x][y] = Tileset.COIN;
-                    System.out.println("Coin spawned at: " + x + ", " + y); // Debug print
+        Random random = new Random();
+        double cornerSpawnChance = 0.1;
+        double randomSpawnChance = 0.02; // Lower chance for random spawns
+
+        for (int x = 1; x < WIDTH - 1; x++) {
+            for (int y = 1; y < HEIGHT - 1; y++) {
+                if (world[x][y] == Tileset.FLOOR) {
+                    int adjacentWalls = 0;
+                    if (world[x + 1][y] == Tileset.CELL) adjacentWalls++;
+                    if (world[x - 1][y] == Tileset.CELL) adjacentWalls++;
+                    if (world[x][y + 1] == Tileset.CELL) adjacentWalls++;
+                    if (world[x][y - 1] == Tileset.CELL) adjacentWalls++;
+
+                    if (adjacentWalls >= 2 && random.nextDouble() < cornerSpawnChance) {
+                        world[x][y] = Tileset.COIN;
+                    } else if (random.nextDouble() < randomSpawnChance) { // Random spawn if not a corner
+                        world[x][y] = Tileset.COIN;
+                    }
                 }
             }
         }
-        // Update world to spawn coins
     }
-
-    private static boolean isSpawnableCorner(TETile[][] world, int x, int y) {
-        // Check if the tile is a floor and a corner
-        if (world[x][y] != Tileset.FLOOR) {
-            return false;
-        }
-        int wallCount = 0;
-        if (isWall(world, x + 1, y)) wallCount++;
-        if (isWall(world, x - 1, y)) wallCount++;
-        if (isWall(world, y + 1, y)) wallCount++;
-        if (isWall(world, y - 1, y)) wallCount++;
-        return wallCount >= 2;
-    }
-
-
-    // Determine if the tile is a wall
-    private static boolean isWall(TETile[][] world, int x, int y) {
-        if (x < 0 || x >= WIDTH || y < 0 || y > HEIGHT + 4) {
-            return true;
-        }
-        return world[x][y] == Tileset.CELL;
-    }
-
-
-
-
 
     // Change Lights
     private static void changeLights(TETile[][] world, Avatar player) {
@@ -154,14 +135,7 @@ public class Main {
                 case "d" -> player.x += 1;
             }
 
-            // Increment score when the player moves to the tile with COIN
-            if (world[player.x][player.y] == Tileset.COIN) {
-                score++;
-                world[player.x][player.y] = Tileset.FLOOR; // removes the COIN
-            }
-
             updateAvatar(world, player);
-
         }
     }
 
