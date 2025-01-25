@@ -35,6 +35,7 @@ public class Tileset {
 
     public static final TETile CELL = new TETile('█', Color.white, Color.black, "cell", 12);
     public static final TETile MONSTER = new TETile('☠', Color.RED, Color.BLACK, "monster", 13);
+    public static final TETile COIN = new TETile('⛁', Color.yellow, Color.black, "coin", 13);
 }
 
 
