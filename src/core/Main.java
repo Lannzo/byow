@@ -5,6 +5,10 @@ import tileengine.TERenderer;
 import tileengine.TETile;
 import tileengine.Tileset;
 
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.List;
+
 import java.util.ArrayDeque;
 import java.util.Random;
 
@@ -17,6 +21,12 @@ public class Main {
 
     private static final long SEED = 2873123;
     private static final Random RANDOM = new Random();
+
+    private static int bombX;
+    private static int bombY;
+    private static int bombTimer;
+    private static boolean bombActive = false;
+    private static List<ExplosionTile> explosionTiles = new ArrayList<>();
 
     public static void main(String[] args) {
         // initialize the tile rendering engine with a window of size WIDTH x HEIGHT
@@ -34,6 +44,8 @@ public class Main {
         smoothen(world, 3);
 
         // timer 10 seconds
+        // Initialize bomb variables
+        bombTimer = -1; // Not active initially
 
 
 //        spawnCoins();
@@ -54,9 +66,81 @@ public class Main {
             }
 
             makeMove(input, player, world);
+
+            // Bomb logic
+            if (!bombActive) {
+                spawnBomb(world);
+            }
+
+            if (bombActive) {
+                bombTimer--;
+                if (bombTimer <= 0) {
+                    explodeBomb(world);
+                    bombActive = false;
+                }
+            }
+            updateExplosions(world);
+
             ter.renderFrame(world);
         }
     }
+
+    private static class ExplosionTile {
+        int x;
+        int y;
+        int timer;
+
+        public ExplosionTile(int x, int y, int timer) {
+            this.x = x;
+            this.y = y;
+            this.timer = timer;
+        }
+    }
+
+    private static void spawnBomb(TETile[][] world) {
+        // Find a random floor tile
+        while (true) {
+            bombX = RANDOM.nextInt(WIDTH);
+            bombY = RANDOM.nextInt(HEIGHT);
+            if (world[bombX][bombY] == Tileset.FLOOR) {
+                break;
+            }
+        }
+
+        world[bombX][bombY] = Tileset.BOMB; // Use flower as bomb for now, replace with bomb image later
+        bombTimer = 400; // Set timer to 50 frames (adjust for desired duration)
+        bombActive = true;
+    }
+
+    private static void explodeBomb(TETile[][] world) {
+        explosionTiles.clear(); // Clear previous explosion effects
+
+        for (int x = bombX - 2; x <= bombX + 1; x++) {
+            for (int y = bombY - 2; y <= bombY + 1; y++) {
+                if (x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT && world[x][y] != Tileset.CELL && world[x][y] != Tileset.NOTHING) {
+                    if(world[x][y] == Tileset.AVATAR){
+                        System.out.println("Game Over");
+                        System.exit(0);
+                    }
+                    explosionTiles.add(new ExplosionTile(x, y, 120)); // Add to explosion list with timer
+                    world[x][y] = Tileset.FIRE; // Set to fire
+                }
+            }
+        }
+    }
+
+    private static void updateExplosions(TETile[][] world) {
+
+        for (ExplosionTile tile : explosionTiles) {
+            tile.timer--;
+
+            if (tile.timer <= 0) {
+                world[tile.x][tile.y] = Tileset.FLOOR; // Revert to floor
+            }
+        }
+
+    }
+
 
     private static void placeLadders() {
         // Generate new world, proceed to next level
@@ -94,6 +178,7 @@ public class Main {
 
         // Render original world
     }
+
 
     private static boolean withinVision(Avatar player, TETile[][] world, int x, int y, int radius) {
         int playerPosX = player.x;
