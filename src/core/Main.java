@@ -5,7 +5,10 @@ import tileengine.TERenderer;
 import tileengine.TETile;
 import tileengine.Tileset;
 
+import java.awt.*;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class Main {
@@ -37,7 +40,15 @@ public class Main {
 
 
 //        spawnCoins();
-        spawnMonsters();
+        List<Monster> monsters = new ArrayList<>();
+
+        int minMonster = 5;
+        int maxMonster = 10;
+
+        int numMon = RANDOM.nextInt(maxMonster) + minMonster;
+        spawnMonsters(world, monsters,numMon);
+
+
         placeLadders();
 
         Avatar player = createAvatar(CENTERX, CENTERY);
@@ -45,6 +56,8 @@ public class Main {
 
         // Update world and avatar movement
         boolean gameOver = false;
+        int monsterMoveCounter =0;
+
         while (!gameOver) {
             String input = takeInput();
 
@@ -54,7 +67,19 @@ public class Main {
             }
 
             makeMove(input, player, world);
+
+            // Make the movement of monster slower
+            if (monsterMoveCounter % 50 == 0){
+                moveMonsters(world,monsters);
+            }
+            monsterMoveCounter++;
+
             ter.renderFrame(world);
+
+            if (checkCollision(player, monsters)){
+                System.out.println("Game Over! You were caught by a monster.");
+                gameOver = true;
+            }
         }
     }
 
@@ -62,13 +87,55 @@ public class Main {
         // Generate new world, proceed to next level
     }
 
-    private static void spawnMonsters() {
+    private static void spawnMonsters(TETile[][] world, List<Monster> monsters, int numberOfMonsters) {
         // Spawn monster
+        for (int i = 0; i < numberOfMonsters; i++){
+            int x,y;
+            do {
+                x = RANDOM.nextInt(WIDTH);
+                y = RANDOM.nextInt(HEIGHT);
+            } while (world[x][y] != Tileset.FLOOR); // to spawn monsters only in floor tiles
 
-        // Random walk monster at time intervals
-
-        // If avatar walks into monster, dead end game
+            world[x][y] = Tileset.MONSTER;
+            monsters.add(new Monster(x,y));
+        }
     }
+
+    private static void moveMonsters(TETile[][] world, List<Monster> monsters) {
+        for (Monster monster : monsters) {
+            // Save current position
+            int oldX = monster.x;
+            int oldY = monster.y;
+
+            // Randomly choose a direction
+            switch (RANDOM.nextInt(4)) {
+                case 0 -> monster.x++; // Move right
+                case 1 -> monster.x--; // Move left
+                case 2 -> monster.y++; // Move up
+                case 3 -> monster.y--; // Move down
+            }
+
+            // Ensure the monster doesn't move into walls or out of bounds
+            if (monster.x < 0 || monster.x >= WIDTH || monster.y < 0 || monster.y >= HEIGHT ||
+                    world[monster.x][monster.y] != Tileset.FLOOR) {
+                monster.x = oldX;
+                monster.y = oldY;
+            } else {
+                world[oldX][oldY] = Tileset.FLOOR; // Clear old position
+                world[monster.x][monster.y] = Tileset.MONSTER; // Update new position
+            }
+        }
+    }
+
+    private static boolean checkCollision(Avatar player, List<Monster> monsters) {
+        for (Monster monster : monsters) {
+            if (player.x == monster.x && player.y == monster.y) {
+                return true; // Player collided with a monster
+            }
+        }
+        return false;
+    }
+
 
     private static void spawnCoins() {
         // Logic where to spawn coins: find corner floors, spawn coins with chance p%
