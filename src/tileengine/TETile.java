@@ -222,4 +222,5 @@ public class TETile {
         }
         return (o instanceof TETile otherTile && otherTile.id == this.id);
     }
+
 }
