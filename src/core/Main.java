@@ -223,12 +223,16 @@ public class Main {
 
             // Ensure the monster doesn't move into walls or out of bounds
             if (monster.x < 0 || monster.x >= WIDTH || monster.y < 0 || monster.y >= HEIGHT ||
-                    world[monster.x][monster.y] != Tileset.FLOOR) {
+                    world[monster.x][monster.y] == Tileset.CELL) {
                 monster.x = oldX;
                 monster.y = oldY;
             } else {
-                world[oldX][oldY] = Tileset.FLOOR; // Clear old position
-                world[monster.x][monster.y] = Tileset.MONSTER; // Update new position
+                // Allow monster walking into avatar
+                if (world[oldX][oldY] != Tileset.AVATAR) {
+                    world[oldX][oldY] = Tileset.FLOOR;
+                }
+
+                world[monster.x][monster.y] = Tileset.MONSTER;
             }
         }
     }
@@ -266,14 +270,6 @@ public class Main {
             }
         }
 
-    }
-
-    private static boolean withinVision(Avatar player, TETile[][] world, int x, int y, int radius) {
-        int playerPosX = player.x;
-        int playerPosY = player.y;
-
-        // Calculate if tile within radius
-        return (x >= playerPosX - radius && x <= playerPosX + radius) && (y > playerPosY - radius || y < playerPosY + radius);
     }
 
     private static void makeMove(String move, Avatar player, TETile[][] world) {
