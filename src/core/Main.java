@@ -5,16 +5,11 @@ import tileengine.TERenderer;
 import tileengine.TETile;
 import tileengine.Tileset;
 
-import java.awt.*;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.awt.Color;
 import java.awt.Font;
-
-
-
 
 public class Main {
     private static final int WIDTH = 60;
@@ -33,24 +28,12 @@ public class Main {
         TERenderer ter = new TERenderer();
         ter.initialize(WIDTH + 4, HEIGHT + 6, 2, 3);
 
-
-
-        // initialize tiles
         TETile[][] world = new TETile[WIDTH][HEIGHT];
 
-        // Enter interface
-
-        // Take
-
-        // Methods to generate the world
         randomWalk(world);
         smoothen(world, 3);
         spawnCoins(world);
 
-        // timer 10 seconds
-
-
-//        spawnCoins();
         List<Monster> monsters = new ArrayList<>();
 
         int minMonster = 5;
@@ -58,9 +41,6 @@ public class Main {
 
         int numMon = RANDOM.nextInt(maxMonster) + minMonster;
         spawnMonsters(world, monsters,numMon);
-
-
-        placeLadders();
 
         Avatar player = createAvatar(CENTERX, CENTERY);
         updateAvatar(world, player);
@@ -82,26 +62,21 @@ public class Main {
         while (!gameOver) {
             String input = takeInput();
 
-            // Turn off lights
-            if (input.equals("L")) {
-                changeLights(world, player);
-            }
-
             makeMove(input, player, world);
 
             // Make the movement of monster slower
-            if (monsterMoveCounter % 50 == 0){
-                moveMonsters(world,monsters);
+            if (monsterMoveCounter % 50 == 0) {
+                moveMonsters(world, monsters);
             }
             monsterMoveCounter++;
 
             ter.renderFrame(world);
 
-
-            if (checkCollision(player, monsters)){
+            if (checkCollision(player, monsters)) {
                 System.out.println("Game Over! You were caught by a monster.");
                 gameOver = true;
 
+            }
             drawHUD(score, board); // Draw HUD including the board
             StdDraw.show(); // Essential for displaying the HUD
         }
@@ -111,15 +86,9 @@ public class Main {
             score++;
             updateBoard(board, score); // Call to update board with new score
         }
-
-
     }
+
     private static void drawHUD(int score, char[][] board) {
-
-        // Store original drawing parameters
-        //Color originalPenColor = StdDraw.getPenColor();
-        //Font originalFont = StdDraw.getFont();
-
         // Adjust positioning based on ter.initialize parameters
         int offsetX = 2; // Adjust based on the x offset in ter.initialize
         int offsetY = HEIGHT + 5; // Adjusted y-position (one less than total height + top offset)
@@ -134,8 +103,6 @@ public class Main {
         StdDraw.rectangle(offsetX + board[0].length / 2.0, offsetY -0.5 , board[0].length / 2.0 + 0.5, 1.0);
         StdDraw.setPenRadius(0.004); // Adjust thickness as desired
     }
-
-
 
     private static void updateBoard(char[][] board, int score) {
         String scoreStr = String.valueOf(score);
@@ -152,10 +119,6 @@ public class Main {
 
             }
         }
-    }
-
-    private static void placeLadders() {
-        // Generate new world, proceed to next level
     }
 
     private static void spawnMonsters(TETile[][] world, List<Monster> monsters, int numberOfMonsters) {
@@ -207,12 +170,6 @@ public class Main {
         return false;
     }
 
-
-    private static void spawnCoins() {
-        // Logic where to spawn coins: find corner floors, spawn coins with chance p%
-
-        // Update world to spawn coins
-
     // SPAWN COINS UPDATED RANDOM CORNERS AND EVERYWHERE
     private static void spawnCoins(TETile[][] world) {
         Random random = new Random();
@@ -237,25 +194,6 @@ public class Main {
             }
         }
 
-    }
-
-    // Change Lights
-    private static void changeLights(TETile[][] world, Avatar player) {
-        int VISIONRADIUS = 5;
-
-        TETile[][] noLightsWorld = world;
-
-        // Dim the lights
-
-        // Get player coordinates
-
-        // Get all the tiles around player
-
-        // Update temporary world: visible tiles around ,black the rest
-
-        // Render
-
-        // Render original world
     }
 
     private static boolean withinVision(Avatar player, TETile[][] world, int x, int y, int radius) {
