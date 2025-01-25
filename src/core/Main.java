@@ -34,6 +34,7 @@ public class Main {
     private static Clip backgroundMusicClip;
     private static Clip coinCollectClip;
     private static Clip monsterCollisionClip;
+    private static Clip bombCollisionClip;
 
     private static final long SEED = 2873123;
     private static final Random RANDOM = new Random();
@@ -90,11 +91,10 @@ public class Main {
         // Load sound effects
         loadSoundEffect("coin", "src/sounds/coin.wav");
         loadSoundEffect("monster", "src/sounds/ack.wav");
+        loadSoundEffect("bomb", "src/sounds/bomb.wav");
 
         while (!gameOver) {
             String input = takeInput();
-
-            makeMove(input, player, world);
 
             // Make the movement of monster slower
             if (monsterMoveCounter % 50 == 0) {
@@ -113,10 +113,15 @@ public class Main {
                 bombTimer--;
                 if (bombTimer <= 0) {
                     explodeBomb(world);
+                    playSoundEffect("bomb");
+                    gameOver = avatarBombed(player);
                     bombActive = false;
                 }
             }
-            updateExplosions(world);
+
+            if (!gameOver) {
+                updateExplosions(world);
+            }
 
             ter.renderFrame(world);
 
@@ -136,7 +141,6 @@ public class Main {
             updateBoard(board, score); // Call to update board with new score
         }
     }
-
 
     private static class ExplosionTile {
         int x;
@@ -171,15 +175,20 @@ public class Main {
         for (int x = bombX - 2; x <= bombX + 1; x++) {
             for (int y = bombY - 2; y <= bombY + 1; y++) {
                 if (x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT && world[x][y] != Tileset.CELL && world[x][y] != Tileset.NOTHING) {
-                    if(world[x][y] == Tileset.AVATAR){
-                        System.out.println("Game Over");
-                        System.exit(0);
-                    }
-                    explosionTiles.add(new ExplosionTile(x, y, 120)); // Add to explosion list with timer
+                    explosionTiles.add(new ExplosionTile(x, y, 60)); // Add to explosion list with timer
                     world[x][y] = Tileset.FIRE; // Set to fire
                 }
             }
         }
+    }
+
+    private static boolean avatarBombed(Avatar player) {
+        for (ExplosionTile tile : explosionTiles) {
+            if (player.x == tile.x && player.y == tile.y) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void updateExplosions(TETile[][] world) {
@@ -193,10 +202,6 @@ public class Main {
         }
 
     }
-
-
-    private static void placeLadders() {
-        // Generate new world, proceed to next level
 
     private static void loadBackgroundMusic(String filePath) {
         try {
@@ -232,6 +237,9 @@ public class Main {
                 } else if ("monster".equals(type)) {
                     monsterCollisionClip = AudioSystem.getClip();
                     monsterCollisionClip.open(audioInput);
+                } else if ("bomb".equals(type)) {
+                    bombCollisionClip = AudioSystem.getClip();
+                    bombCollisionClip.open(audioInput);
                 }
             } else {
                 System.out.println("Can't find file: " + filePath);
@@ -248,6 +256,9 @@ public class Main {
         } else if ("monster".equals(type) && monsterCollisionClip != null) {
             monsterCollisionClip.setFramePosition(0); // Reset to start
             monsterCollisionClip.start();
+        } else if ("bomb".equals(type) && bombCollisionClip != null) {
+            bombCollisionClip.setFramePosition(0); // Reset to start
+            bombCollisionClip.start();
         }
     }
 
