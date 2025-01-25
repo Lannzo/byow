@@ -34,6 +34,8 @@ public class Tileset {
     public static final TETile TREE = new TETile('♠', Color.green, Color.black, "tree", 11);
 
     public static final TETile CELL = new TETile('█', Color.white, Color.black, "cell", 12);
+    public static final TETile BOMB = new TETile('✴', Color.red, Color.black, "bomb", 13);
+    public static final TETile FIRE = new TETile('♨', Color.orange, Color.black, "fire", 14); // Or use a suitable character
     public static final TETile MONSTER = new TETile('☠', Color.RED, Color.BLACK, "monster", 13);
     public static final TETile COIN = new TETile('⛁', Color.yellow, Color.black, "coin", 13);
 }
