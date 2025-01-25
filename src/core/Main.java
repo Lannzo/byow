@@ -5,6 +5,13 @@ import tileengine.TERenderer;
 import tileengine.TETile;
 import tileengine.Tileset;
 
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -19,6 +26,9 @@ public class Main {
     private static final int CENTERY =  HEIGHT / 2;
     private static int score = 0; // Keep track of the score
 
+    private static Clip backgroundMusicClip;
+    private static Clip coinCollectClip;
+    private static Clip monsterCollisionClip;
 
     private static final long SEED = 2873123;
     private static final Random RANDOM = new Random();
@@ -59,6 +69,14 @@ public class Main {
         boolean gameOver = false;
         int monsterMoveCounter =0;
 
+        // Load and play background music
+        loadBackgroundMusic("src/sounds/bg.wav");
+        playBackgroundMusic();
+
+        // Load sound effects
+        loadSoundEffect("coin", "src/sounds/coin.wav");
+        loadSoundEffect("monster", "src/sounds/ack.wav");
+
         while (!gameOver) {
             String input = takeInput();
 
@@ -73,6 +91,7 @@ public class Main {
             ter.renderFrame(world);
 
             if (checkCollision(player, monsters)) {
+                playSoundEffect("monster");
                 System.out.println("Game Over! You were caught by a monster.");
                 gameOver = true;
 
@@ -85,6 +104,59 @@ public class Main {
         if (score > 0) {
             score++;
             updateBoard(board, score); // Call to update board with new score
+        }
+    }
+
+    private static void loadBackgroundMusic(String filePath) {
+        try {
+            File musicPath = new File(filePath);
+
+            if (musicPath.exists()) {
+                AudioInputStream audioInput = AudioSystem.getAudioInputStream(musicPath);
+                backgroundMusicClip = AudioSystem.getClip();
+                backgroundMusicClip.open(audioInput);
+            } else {
+                System.out.println("Can't find file");
+            }
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void playBackgroundMusic() {
+        if (backgroundMusicClip != null) {
+            backgroundMusicClip.start();
+            backgroundMusicClip.loop(Clip.LOOP_CONTINUOUSLY);
+        }
+    }
+
+    private static void loadSoundEffect(String type, String filePath) {
+        try {
+            File soundFile = new File(filePath);
+            if (soundFile.exists()) {
+                AudioInputStream audioInput = AudioSystem.getAudioInputStream(soundFile);
+                if ("coin".equals(type)) {
+                    coinCollectClip = AudioSystem.getClip();
+                    coinCollectClip.open(audioInput);
+                } else if ("monster".equals(type)) {
+                    monsterCollisionClip = AudioSystem.getClip();
+                    monsterCollisionClip.open(audioInput);
+                }
+            } else {
+                System.out.println("Can't find file: " + filePath);
+            }
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void playSoundEffect(String type) {
+        if ("coin".equals(type) && coinCollectClip != null) {
+            coinCollectClip.setFramePosition(0); // Reset to start
+            coinCollectClip.start();
+        } else if ("monster".equals(type) && monsterCollisionClip != null) {
+            monsterCollisionClip.setFramePosition(0); // Reset to start
+            monsterCollisionClip.start();
         }
     }
 
@@ -247,7 +319,7 @@ public class Main {
 
         // Outside of world
         if (x < 0 ||  x >= world.length || y < 0 || y >= world[0].length){
-           return false;
+            return false;
         }
 
         // Attempted to move to a wall
@@ -255,6 +327,7 @@ public class Main {
             return false;
         }
         if (world[x][y] == Tileset.COIN) {
+            playSoundEffect("coin");
             world[x][y] = Tileset.FLOOR;
             score++; // Increment the score when a coin is picked up
             System.out.println("Coin Collected! Score: " + score);
