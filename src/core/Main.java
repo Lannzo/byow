@@ -24,6 +24,8 @@ import java.awt.Color;
 import java.awt.Font;
 
 public class Main {
+
+
     private static final int WIDTH = 60;
     private static final int HEIGHT = 45;
     private static final int TILE_COUNT = WIDTH * HEIGHT;
@@ -46,6 +48,9 @@ public class Main {
     private static List<ExplosionTile> explosionTiles = new ArrayList<>();
 
     public static void main(String[] args) {
+
+        showMenu(); // Game interface
+
         // initialize the tile rendering engine with a window of size WIDTH x HEIGHT
         TERenderer ter = new TERenderer();
         ter.initialize(WIDTH + 4, HEIGHT + 6, 2, 3);
@@ -55,6 +60,7 @@ public class Main {
         randomWalk(world);
         smoothen(world, 3);
         spawnCoins(world);
+
 
         // timer 10 seconds
         // Initialize bomb variables
@@ -80,6 +86,7 @@ public class Main {
             }
         }
 
+
         // Update world and avatar movement
         boolean gameOver = false;
         int monsterMoveCounter =0;
@@ -87,6 +94,7 @@ public class Main {
         // Load and play background music
         loadBackgroundMusic("src/sounds/bg.wav");
         playBackgroundMusic();
+
 
         // Load sound effects
         loadSoundEffect("coin", "src/sounds/coin.wav");
@@ -127,8 +135,10 @@ public class Main {
 
             if (checkCollision(player, monsters)) {
                 playSoundEffect("monster");
+                stopBackgroundMusic();
                 System.out.println("Game Over! You were caught by a monster.");
                 gameOver = true;
+                showGameOverScreen(score);
 
             }
             drawHUD(score, board); // Draw HUD including the board
@@ -140,6 +150,114 @@ public class Main {
             score++;
             updateBoard(board, score); // Call to update board with new score
         }
+    }
+
+    //Menu
+    private static void showMenu() {
+        StdDraw.setCanvasSize(800, 600); // Set menu screen size
+        boolean redraw = true; // Flag to track whether to redraw the screen
+
+        while (true) { // Keep showing the menu until the game starts or the program exits
+            if (redraw) {
+                StdDraw.clear(StdDraw.BLACK);   // Clear the screen to black
+                StdDraw.picture(0.5, 0.5, "src/image/bg asset.png", 1.0, 1.0);
+
+                // Display menu text
+                StdDraw.setPenColor(StdDraw.WHITE);
+                StdDraw.setFont(new Font("Monospaced", Font.BOLD, 50));
+                StdDraw.text(0.5, 0.7, "GAME TITLE");
+
+                StdDraw.setFont(new Font("Monospaced", Font.BOLD, 30));
+                StdDraw.text(0.5, 0.5, "(1) New Game");
+                StdDraw.text(0.5, 0.4, "(2) Instructions");
+                StdDraw.text(0.5, 0.3, "(3) Exit");
+
+                StdDraw.show(); // Render the menu
+                redraw = false; // Set redraw to false to avoid unnecessary redrawing
+            }
+
+            // Wait for user input
+            if (StdDraw.hasNextKeyTyped()) {
+                char input = StdDraw.nextKeyTyped();
+                if (input == '1') {
+                    return; // Start the game
+                } else if (input == '2') {
+                    showInstructions(); // Show the instructions
+                    redraw = true; // Redraw the menu after instructions
+                } else if (input == '3') {
+                    System.exit(0); // Exit the game
+                }
+            }
+        }
+    }
+
+    //Instructions
+    private static void showInstructions() {
+        StdDraw.setCanvasSize(800, 600); // Set instructions screen size
+        StdDraw.picture(0.5, 0.5, "src/image/bg asset2.png", 1.0, 1.0);
+
+        // Display instructions text
+        StdDraw.setPenColor(StdDraw.WHITE);
+        StdDraw.setFont(new Font("Monospaced", Font.BOLD, 20));
+        StdDraw.text(0.5, 0.8, "HOW TO PLAY:");
+        StdDraw.text(0.5, 0.7, "1. Use WASD keys to move.");
+        StdDraw.text(0.5, 0.6, "2. Collect coins to increase your score.");
+        StdDraw.text(0.5, 0.5, "3. Avoid monsters and bombs. Or else you will die.");
+        StdDraw.text(0.5, 0.4, "4. Press (B) to go back to the menu to start a new game.");
+
+
+        StdDraw.show(); // Render the instructions
+
+        // Wait for user input to go back
+        while (true) {
+            if (StdDraw.hasNextKeyTyped()) {
+                char input = StdDraw.nextKeyTyped();
+                if (input == 'b' || input == 'B') {
+                    return; // Exit instructions and go back to the menu
+                }
+            }
+        }
+    }
+
+    //Method to stop bg music
+    private static void stopBackgroundMusic() {
+        if (backgroundMusicClip != null && backgroundMusicClip.isRunning()) {
+            backgroundMusicClip.stop();
+        }
+    }
+
+    private static void showGameOverScreen(int finalScore) {
+        StdDraw.clear(StdDraw.BLACK); // Clear the screen
+        StdDraw.setPenColor(StdDraw.WHITE);
+        StdDraw.setXscale(0, 1);
+        StdDraw.setYscale(0, 1);
+        StdDraw.setFont(new Font("Monospaced", Font.BOLD, 50));
+        StdDraw.text(0.5, 0.7, "GAME OVER!");
+
+        StdDraw.setFont(new Font("Monospaced", Font.BOLD, 30));
+        StdDraw.text(0.5, 0.5, "Your Score: " + finalScore);
+        StdDraw.text(0.5, 0.4, "(R) Restart");
+        StdDraw.text(0.5, 0.3, "(Q) Quit");
+
+        StdDraw.show();
+
+        while (true) {
+            if (StdDraw.hasNextKeyTyped()) {
+                char input = StdDraw.nextKeyTyped();
+                if (input == 'r' || input == 'R') {
+                    resetGame(); // Reset the game state
+                    return;
+                } else if (input == 'q' || input == 'Q') {
+                    System.exit(0); // Exit the game
+                }
+            }
+        }
+    }
+
+    // Method to reset the game state
+    private static void resetGame() {
+        score = 0; // Reset the score to 0
+        main(null); // Restart the game by calling the main method
     }
 
     private static class ExplosionTile {
