@@ -5,12 +5,23 @@ import tileengine.TERenderer;
 import tileengine.TETile;
 import tileengine.Tileset;
 
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.List;
+
+import java.util.ArrayDeque;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.awt.Color;
 import java.awt.Font;
-
-
-
 
 public class Main {
     private static final int WIDTH = 60;
@@ -20,35 +31,41 @@ public class Main {
     private static final int CENTERY =  HEIGHT / 2;
     private static int score = 0; // Keep track of the score
 
+    private static Clip backgroundMusicClip;
+    private static Clip coinCollectClip;
+    private static Clip monsterCollisionClip;
+    private static Clip bombCollisionClip;
 
     private static final long SEED = 2873123;
     private static final Random RANDOM = new Random();
+
+    private static int bombX;
+    private static int bombY;
+    private static int bombTimer;
+    private static boolean bombActive = false;
+    private static List<ExplosionTile> explosionTiles = new ArrayList<>();
 
     public static void main(String[] args) {
         // initialize the tile rendering engine with a window of size WIDTH x HEIGHT
         TERenderer ter = new TERenderer();
         ter.initialize(WIDTH + 4, HEIGHT + 6, 2, 3);
 
-
-
-        // initialize tiles
         TETile[][] world = new TETile[WIDTH][HEIGHT];
 
-        // Enter interface
-
-        // Take
-
-        // Methods to generate the world
         randomWalk(world);
         smoothen(world, 3);
         spawnCoins(world);
 
         // timer 10 seconds
+        // Initialize bomb variables
+        bombTimer = -1; // Not active initially
+        List<Monster> monsters = new ArrayList<>();
 
+        int minMonster = 5;
+        int maxMonster = 10;
 
-//        spawnCoins();
-        spawnMonsters();
-        placeLadders();
+        int numMon = RANDOM.nextInt(maxMonster) + minMonster;
+        spawnMonsters(world, monsters,numMon);
 
         Avatar player = createAvatar(CENTERX, CENTERY);
         updateAvatar(world, player);
@@ -65,16 +82,55 @@ public class Main {
 
         // Update world and avatar movement
         boolean gameOver = false;
+        int monsterMoveCounter =0;
+
+        // Load and play background music
+        loadBackgroundMusic("src/sounds/bg.wav");
+        playBackgroundMusic();
+
+        // Load sound effects
+        loadSoundEffect("coin", "src/sounds/coin.wav");
+        loadSoundEffect("monster", "src/sounds/ack.wav");
+        loadSoundEffect("bomb", "src/sounds/bomb.wav");
+
         while (!gameOver) {
             String input = takeInput();
 
-            // Turn off lights
-            if (input.equals("L")) {
-                changeLights(world, player);
+            // Make the movement of monster slower
+            if (monsterMoveCounter % 50 == 0) {
+                moveMonsters(world, monsters);
             }
+            monsterMoveCounter++;
 
             makeMove(input, player, world);
+
+            // Bomb logic
+            if (!bombActive) {
+                spawnBomb(world);
+            }
+
+            if (bombActive) {
+                bombTimer--;
+                if (bombTimer <= 0) {
+                    explodeBomb(world);
+                    playSoundEffect("bomb");
+                    gameOver = avatarBombed(player);
+                    bombActive = false;
+                }
+            }
+
+            if (!gameOver) {
+                updateExplosions(world);
+            }
+
             ter.renderFrame(world);
+
+            if (checkCollision(player, monsters)) {
+                playSoundEffect("monster");
+                System.out.println("Game Over! You were caught by a monster.");
+                gameOver = true;
+
+            }
             drawHUD(score, board); // Draw HUD including the board
             StdDraw.show(); // Essential for displaying the HUD
         }
@@ -84,15 +140,129 @@ public class Main {
             score++;
             updateBoard(board, score); // Call to update board with new score
         }
+    }
 
+    private static class ExplosionTile {
+        int x;
+        int y;
+        int timer;
+
+        public ExplosionTile(int x, int y, int timer) {
+            this.x = x;
+            this.y = y;
+            this.timer = timer;
+        }
+    }
+
+    private static void spawnBomb(TETile[][] world) {
+        // Find a random floor tile
+        while (true) {
+            bombX = RANDOM.nextInt(WIDTH);
+            bombY = RANDOM.nextInt(HEIGHT);
+            if (world[bombX][bombY] == Tileset.FLOOR) {
+                break;
+            }
+        }
+
+        world[bombX][bombY] = Tileset.BOMB; // Use flower as bomb for now, replace with bomb image later
+        bombTimer = 400; // Set timer to 50 frames (adjust for desired duration)
+        bombActive = true;
+    }
+
+    private static void explodeBomb(TETile[][] world) {
+        explosionTiles.clear(); // Clear previous explosion effects
+
+        for (int x = bombX - 2; x <= bombX + 1; x++) {
+            for (int y = bombY - 2; y <= bombY + 1; y++) {
+                if (x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT && world[x][y] != Tileset.CELL && world[x][y] != Tileset.NOTHING) {
+                    explosionTiles.add(new ExplosionTile(x, y, 60)); // Add to explosion list with timer
+                    world[x][y] = Tileset.FIRE; // Set to fire
+                }
+            }
+        }
+    }
+
+    private static boolean avatarBombed(Avatar player) {
+        for (ExplosionTile tile : explosionTiles) {
+            if (player.x == tile.x && player.y == tile.y) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void updateExplosions(TETile[][] world) {
+
+        for (ExplosionTile tile : explosionTiles) {
+            tile.timer--;
+
+            if (tile.timer <= 0) {
+                world[tile.x][tile.y] = Tileset.FLOOR; // Revert to floor
+            }
+        }
 
     }
+
+    private static void loadBackgroundMusic(String filePath) {
+        try {
+            File musicPath = new File(filePath);
+
+            if (musicPath.exists()) {
+                AudioInputStream audioInput = AudioSystem.getAudioInputStream(musicPath);
+                backgroundMusicClip = AudioSystem.getClip();
+                backgroundMusicClip.open(audioInput);
+            } else {
+                System.out.println("Can't find file");
+            }
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void playBackgroundMusic() {
+        if (backgroundMusicClip != null) {
+            backgroundMusicClip.start();
+            backgroundMusicClip.loop(Clip.LOOP_CONTINUOUSLY);
+        }
+    }
+
+    private static void loadSoundEffect(String type, String filePath) {
+        try {
+            File soundFile = new File(filePath);
+            if (soundFile.exists()) {
+                AudioInputStream audioInput = AudioSystem.getAudioInputStream(soundFile);
+                if ("coin".equals(type)) {
+                    coinCollectClip = AudioSystem.getClip();
+                    coinCollectClip.open(audioInput);
+                } else if ("monster".equals(type)) {
+                    monsterCollisionClip = AudioSystem.getClip();
+                    monsterCollisionClip.open(audioInput);
+                } else if ("bomb".equals(type)) {
+                    bombCollisionClip = AudioSystem.getClip();
+                    bombCollisionClip.open(audioInput);
+                }
+            } else {
+                System.out.println("Can't find file: " + filePath);
+            }
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void playSoundEffect(String type) {
+        if ("coin".equals(type) && coinCollectClip != null) {
+            coinCollectClip.setFramePosition(0); // Reset to start
+            coinCollectClip.start();
+        } else if ("monster".equals(type) && monsterCollisionClip != null) {
+            monsterCollisionClip.setFramePosition(0); // Reset to start
+            monsterCollisionClip.start();
+        } else if ("bomb".equals(type) && bombCollisionClip != null) {
+            bombCollisionClip.setFramePosition(0); // Reset to start
+            bombCollisionClip.start();
+        }
+    }
+
     private static void drawHUD(int score, char[][] board) {
-
-        // Store original drawing parameters
-        //Color originalPenColor = StdDraw.getPenColor();
-        //Font originalFont = StdDraw.getFont();
-
         // Adjust positioning based on ter.initialize parameters
         int offsetX = 2; // Adjust based on the x offset in ter.initialize
         int offsetY = HEIGHT + 5; // Adjusted y-position (one less than total height + top offset)
@@ -108,8 +278,6 @@ public class Main {
         StdDraw.setPenRadius(0.004); // Adjust thickness as desired
     }
 
-
-
     private static void updateBoard(char[][] board, int score) {
         String scoreStr = String.valueOf(score);
 
@@ -122,20 +290,62 @@ public class Main {
         for (int i = 0; i < scoreStr.length(); i++) {
             if (i < board[0].length) { // Prevent index out of bounds
                 board[0][i] = scoreStr.charAt(i);
+
             }
         }
     }
 
-    private static void placeLadders() {
-        // Generate new world, proceed to next level
+    private static void spawnMonsters(TETile[][] world, List<Monster> monsters, int numberOfMonsters) {
+        // Spawn monster
+        for (int i = 0; i < numberOfMonsters; i++){
+            int x,y;
+            do {
+                x = RANDOM.nextInt(WIDTH);
+                y = RANDOM.nextInt(HEIGHT);
+            } while (world[x][y] != Tileset.FLOOR); // to spawn monsters only in floor tiles
+
+            world[x][y] = Tileset.MONSTER;
+            monsters.add(new Monster(x,y));
+        }
     }
 
-    private static void spawnMonsters() {
-        // Spawn monster
+    private static void moveMonsters(TETile[][] world, List<Monster> monsters) {
+        for (Monster monster : monsters) {
+            // Save current position
+            int oldX = monster.x;
+            int oldY = monster.y;
 
-        // Random walk monster at time intervals
+            // Randomly choose a direction
+            switch (RANDOM.nextInt(4)) {
+                case 0 -> monster.x++; // Move right
+                case 1 -> monster.x--; // Move left
+                case 2 -> monster.y++; // Move up
+                case 3 -> monster.y--; // Move down
+            }
 
-        // If avatar walks into monster, dead end game
+            // Ensure the monster doesn't move into walls or out of bounds
+            if (monster.x < 0 || monster.x >= WIDTH || monster.y < 0 || monster.y >= HEIGHT ||
+                    world[monster.x][monster.y] == Tileset.CELL) {
+                monster.x = oldX;
+                monster.y = oldY;
+            } else {
+                // Allow monster walking into avatar
+                if (world[oldX][oldY] != Tileset.AVATAR) {
+                    world[oldX][oldY] = Tileset.FLOOR;
+                }
+
+                world[monster.x][monster.y] = Tileset.MONSTER;
+            }
+        }
+    }
+
+    private static boolean checkCollision(Avatar player, List<Monster> monsters) {
+        for (Monster monster : monsters) {
+            if (player.x == monster.x && player.y == monster.y) {
+                return true; // Player collided with a monster
+            }
+        }
+        return false;
     }
 
     // SPAWN COINS UPDATED RANDOM CORNERS AND EVERYWHERE
@@ -161,33 +371,7 @@ public class Main {
                 }
             }
         }
-    }
 
-    // Change Lights
-    private static void changeLights(TETile[][] world, Avatar player) {
-        int VISIONRADIUS = 5;
-
-        TETile[][] noLightsWorld = world;
-
-        // Dim the lights
-
-        // Get player coordinates
-
-        // Get all the tiles around player
-
-        // Update temporary world: visible tiles around ,black the rest
-
-        // Render
-
-        // Render original world
-    }
-
-    private static boolean withinVision(Avatar player, TETile[][] world, int x, int y, int radius) {
-        int playerPosX = player.x;
-        int playerPosY = player.y;
-
-        // Calculate if tile within radius
-        return (x >= playerPosX - radius && x <= playerPosX + radius) && (y > playerPosY - radius || y < playerPosY + radius);
     }
 
     private static void makeMove(String move, Avatar player, TETile[][] world) {
@@ -233,7 +417,7 @@ public class Main {
 
         // Outside of world
         if (x < 0 ||  x >= world.length || y < 0 || y >= world[0].length){
-           return false;
+            return false;
         }
 
         // Attempted to move to a wall
@@ -241,6 +425,7 @@ public class Main {
             return false;
         }
         if (world[x][y] == Tileset.COIN) {
+            playSoundEffect("coin");
             world[x][y] = Tileset.FLOOR;
             score++; // Increment the score when a coin is picked up
             System.out.println("Coin Collected! Score: " + score);
