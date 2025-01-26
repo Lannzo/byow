@@ -75,8 +75,8 @@ public class Main {
         bombTimer = -1; // Not active initially
         List<Monster> monsters = new ArrayList<>();
 
-        int minMonster = 5;
-        int maxMonster = 10;
+        int minMonster = 12;
+        int maxMonster = 18;
 
         int numMon = RANDOM.nextInt(maxMonster) + minMonster;
         spawnMonsters(world, monsters,numMon);
@@ -121,6 +121,10 @@ public class Main {
                     explodeBomb(world);
                     playSoundEffect("bomb");
                     gameOver = avatarBombed(player);
+                    if (gameOver) {
+                        playSoundEffect("monster");
+                        showGameOverScreen(score);
+                    }
                     bombActive = false;
                 }
             }
