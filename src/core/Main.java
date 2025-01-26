@@ -48,6 +48,14 @@ public class Main {
     private static List<ExplosionTile> explosionTiles = new ArrayList<>();
 
     public static void main(String[] args) {
+        // Load and play background music
+        loadBackgroundMusic("src/sounds/bg.wav");
+        playBackgroundMusic();
+
+        // Load sound effects
+        loadSoundEffect("coin", "src/sounds/coin.wav");
+        loadSoundEffect("monster", "src/sounds/ack.wav");
+        loadSoundEffect("bomb", "src/sounds/bomb.wav");
 
         showMenu(); // Game interface
 
@@ -90,16 +98,6 @@ public class Main {
         // Update world and avatar movement
         boolean gameOver = false;
         int monsterMoveCounter =0;
-
-        // Load and play background music
-        loadBackgroundMusic("src/sounds/bg.wav");
-        playBackgroundMusic();
-
-
-        // Load sound effects
-        loadSoundEffect("coin", "src/sounds/coin.wav");
-        loadSoundEffect("monster", "src/sounds/ack.wav");
-        loadSoundEffect("bomb", "src/sounds/bomb.wav");
 
         while (!gameOver) {
             String input = takeInput();
