@@ -9,6 +9,7 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.io.*;
 import java.util.ArrayDeque;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -24,15 +25,15 @@ import java.awt.Color;
 import java.awt.Font;
 
 public class Main {
-
-
     private static final int WIDTH = 60;
     private static final int HEIGHT = 45;
     private static final int TILE_COUNT = WIDTH * HEIGHT;
     private static final int CENTERX =  WIDTH / 2;
     private static final int CENTERY =  HEIGHT / 2;
     private static int score = 0; // Keep track of the score
+    private static int highScore = 0;
 
+    private static final String HIGH_SCORE_FILE = "highscore.txt";
     private static Clip backgroundMusicClip;
     private static Clip coinCollectClip;
     private static Clip monsterCollisionClip;
@@ -58,6 +59,8 @@ public class Main {
         loadSoundEffect("bomb", "src/sounds/bomb.wav");
 
         showMenu(); // Game interface
+
+        loadHighScore();
 
         // initialize the tile rendering engine with a window of size WIDTH x HEIGHT
         TERenderer ter = new TERenderer();
@@ -154,6 +157,7 @@ public class Main {
         }
     }
 
+    
     //Menu
     private static void showMenu() {
         StdDraw.setCanvasSize(800, 600); // Set menu screen size
@@ -234,12 +238,24 @@ public class Main {
         StdDraw.setXscale(0, 1);
         StdDraw.setYscale(0, 1);
         StdDraw.setFont(new Font("Monospaced", Font.BOLD, 50));
-        StdDraw.text(0.5, 0.7, "GAME OVER!");
+        StdDraw.text(0.5, 0.8, "GAME OVER!");
 
         StdDraw.setFont(new Font("Monospaced", Font.BOLD, 30));
-        StdDraw.text(0.5, 0.5, "Your Score: " + finalScore);
-        StdDraw.text(0.5, 0.4, "(R) Restart");
-        StdDraw.text(0.5, 0.3, "(Q) Quit");
+        StdDraw.text(0.5, 0.6, "Your Score: " + finalScore);
+
+        // Check if the player beat the high score
+        if (finalScore > highScore) {
+            highScore = finalScore;
+            saveHighScore(); // Save the new high score
+            StdDraw.text(0.5, 0.5, "New High Score!");
+        } else {
+            StdDraw.text(0.5, 0.5, "High Score: " + highScore);
+        }
+
+        // Add more spacing for the Restart and Quit options
+        StdDraw.text(0.5, 0.35, "(R) Restart");
+        StdDraw.text(0.5, 0.25, "(Q) Quit");
+
 
         StdDraw.show();
 
@@ -255,6 +271,30 @@ public class Main {
             }
         }
     }
+
+    private static void loadHighScore() {
+        File file = new File(HIGH_SCORE_FILE);
+        if (file.exists()) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                String line = reader.readLine();
+                if (line != null) {
+                    highScore = Integer.parseInt(line);
+                }
+            } catch (IOException | NumberFormatException e) {
+                System.out.println("Error loading high score: " + e.getMessage());
+            }
+        }
+    }
+
+    private static void saveHighScore() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(HIGH_SCORE_FILE))) {
+            writer.write(String.valueOf(highScore));
+        } catch (IOException e) {
+            System.out.println("Error saving high score: " + e.getMessage());
+        }
+    }
+
+
 
     // Method to reset the game state
     private static void resetGame() {
@@ -392,6 +432,7 @@ public class Main {
         Font font = new Font(" ", Font.BOLD, 16);
         // Position of Score Label (adjusted for offset)
         StdDraw.textLeft(offsetX, 49.5, "Score: " + score);
+        StdDraw.textRight(WIDTH + 2, 49.5, "High Score: " + highScore);
 
         // Border around the board
         StdDraw.rectangle(offsetX + board[0].length / 2.0, offsetY -0.5 , board[0].length / 2.0 + 0.5, 1.0);

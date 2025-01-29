@@ -8,4 +8,6 @@ public class Avatar {
         this.x = x;
         this.y = y;
     }
+
+
 }
