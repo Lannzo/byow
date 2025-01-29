@@ -46,6 +46,7 @@ public class Main {
     private static int bombTimer;
     private static boolean bombActive = false;
     private static List<ExplosionTile> explosionTiles = new ArrayList<>();
+    private static int coinCount = 0;
 
     public static void main(String[] args) {
         // Load and play background music
@@ -67,7 +68,7 @@ public class Main {
 
         randomWalk(world);
         smoothen(world, 3);
-        spawnCoins(world);
+        spawnCoins(world, 5);
 
 
         // timer 10 seconds
@@ -295,6 +296,9 @@ public class Main {
         for (int x = bombX - 2; x <= bombX + 1; x++) {
             for (int y = bombY - 2; y <= bombY + 1; y++) {
                 if (x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT && world[x][y] != Tileset.CELL && world[x][y] != Tileset.NOTHING) {
+                    if (world[x][y] == Tileset.COIN) {
+                        destroyCoin(x, y, world);
+                    }
                     explosionTiles.add(new ExplosionTile(x, y, 60)); // Add to explosion list with timer
                     world[x][y] = Tileset.FIRE; // Set to fire
                 }
@@ -449,6 +453,11 @@ public class Main {
                 monster.x = oldX;
                 monster.y = oldY;
             } else {
+
+                if (world[monster.x][monster.y] == Tileset.COIN) {
+                    destroyCoin(monster.x, monster.y, world);
+                }
+
                 // Allow monster walking into avatar
                 if (world[oldX][oldY] != Tileset.AVATAR) {
                     world[oldX][oldY] = Tileset.FLOOR;
@@ -469,30 +478,51 @@ public class Main {
     }
 
     // SPAWN COINS UPDATED RANDOM CORNERS AND EVERYWHERE
-    private static void spawnCoins(TETile[][] world) {
+    public static void spawnCoins(TETile[][] world, int numCoins) {
         Random random = new Random();
-        double cornerSpawnChance = 0.1;
-        double randomSpawnChance = 0.02; // Lower chance for random spawns
+        coinCount = 0; // Reset coin count
 
-        for (int x = 1; x < WIDTH - 1; x++) {
-            for (int y = 1; y < HEIGHT - 1; y++) {
-                if (world[x][y] == Tileset.FLOOR) {
-                    int adjacentWalls = 0;
-                    if (world[x + 1][y] == Tileset.CELL) adjacentWalls++;
-                    if (world[x - 1][y] == Tileset.CELL) adjacentWalls++;
-                    if (world[x][y + 1] == Tileset.CELL) adjacentWalls++;
-                    if (world[x][y - 1] == Tileset.CELL) adjacentWalls++;
-
-                    if (adjacentWalls >= 2 && random.nextDouble() < cornerSpawnChance) {
-                        world[x][y] = Tileset.COIN;
-                    } else if (random.nextDouble() < randomSpawnChance) { // Random spawn if not a corner
-                        world[x][y] = Tileset.COIN;
-                    }
+        // Count existing coins
+        for (int x = 0; x < world.length; x++) {
+            for (int y = 0; y < world[0].length; y++) {
+                if (world[x][y] == Tileset.COIN) {
+                    coinCount++;
                 }
             }
         }
 
+        // If all coins are gone, spawn a new batch
+        if (coinCount == 0) {
+            System.out.println("Respawning coins...");
+            for (int i = 0; i < numCoins; i++) {
+                int x, y;
+                do {
+                    x = random.nextInt(world.length);
+                    y = random.nextInt(world[0].length);
+                } while (world[x][y] != Tileset.FLOOR); // Ensure valid tile
+
+                world[x][y] = Tileset.COIN; // Place a coin
+                coinCount++; // Increase count as coins are placed
+            }
+        }
     }
+
+    public static void destroyCoin(int x, int y, TETile[][] world) {
+        if (world[x][y] == Tileset.COIN) {
+            world[x][y] = Tileset.FLOOR; // Replace coin with floor
+            coinCount--; // Reduce coin count
+            System.out.println("Coin at (" + x + ", " + y + ") destroyed! Remaining: " + coinCount);
+
+            if (coinCount == 0) {
+                System.out.println("All coins destroyed! Attempting to respawn...");
+                spawnCoins(world, 10); // Respawn 5 coins if count is 0
+            }
+        } else {
+            System.out.println("Tried to destroy a non-coin tile at (" + x + ", " + y + ")");
+        }
+    }
+
+
 
     private static void makeMove(String move, Avatar player, TETile[][] world) {
         if (validMove(move, player, world)) {
@@ -546,15 +576,17 @@ public class Main {
         }
         if (world[x][y] == Tileset.COIN) {
             playSoundEffect("coin");
-            world[x][y] = Tileset.FLOOR;
+            destroyCoin(x, y, world);
             score++; // Increment the score when a coin is picked up
             System.out.println("Coin Collected! Score: " + score);
+
+            if (coinCount == 0) {
+                spawnCoins(world, 10);  // respawn 5 coins if coinCount is 0
+            }
         }
 
         return true;
-
     }
-
     private static String takeInput() {
         StringBuilder s = new StringBuilder();
         if (StdDraw.hasNextKeyTyped()) {
